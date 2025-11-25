@@ -43,16 +43,17 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         bottomNav.setOnItemSelectedListener(item -> {
-            switch (item.getItemId()) {
-                case R.id.nav_map:
-                    switchFragment(mapFragment);
-                    return true;
-                case R.id.nav_vitals:
-                    switchFragment(vitalsFragment);
-                    return true;
+            int id = item.getItemId();
+            if (id == R.id.nav_map) {
+                switchFragment(mapFragment);
+                return true;
+            } else if (id == R.id.nav_vitals) {
+                switchFragment(vitalsFragment);
+                return true;
             }
             return false;
         });
+
     }
 
     private void switchFragment(Fragment fragment) {

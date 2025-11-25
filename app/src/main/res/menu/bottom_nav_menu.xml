@@ -2,12 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_map"
-        android:title="Map"/>
-<!--        android:icon="@drawable/ic_map"-->
+        android:title="Map"
+        android:icon="@drawable/ic_map" />
 
     <item
         android:id="@+id/nav_vitals"
-        android:title="Vitals"/>
-<!--        android:icon="@drawable/ic_vitals"-->
+        android:title="Vitals"
+        android:icon="@drawable/ic_vitals" />
 
 </menu>
