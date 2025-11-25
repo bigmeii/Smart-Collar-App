@@ -8,59 +8,180 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.example.elec290smartcollarapp1.data.ble.BleTestDevice;
 import com.example.elec290smartcollarapp1.R;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link BleConnectFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import java.util.ArrayList;
+import java.util.List;
+import android.os.Handler;
+
 public class BleConnectFragment extends Fragment {
+    private Spinner deviceSpinner;
+    private Button refreshButton;
+    private Button disconnectButton;
+    private TextView connectionStatusText;
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothLeScanner bleScanner;
+    private ArrayAdapter<String> spinnerAdapter;
+    private final List<String> deviceNames = new ArrayList<String>() {{
+        add(new BleTestDevice("Select Device", "00:11:22:33:44:01", -45).name);
+        add(new BleTestDevice("EthansPC", "00:11:22:33:44:01", -45).name);
+        add(new BleTestDevice("Arduino UNO WiFi", "00:11:22:33:44:02", -70).name);
+        add(new BleTestDevice("Ethan's iPhone (2)", "00:11:22:33:44:03", -60).name);
+    }};
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    final Handler handler = new Handler();
+    private boolean isSpinnerInitialized = false;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    public static boolean isConnected = false;
 
     public BleConnectFragment() {
-        // Required empty public constructor
+        super(R.layout.fragment_ble_connect);
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment BleConnectFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static BleConnectFragment newInstance(String param1, String param2) {
-        BleConnectFragment fragment = new BleConnectFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+//        deviceNames.add(new BleTestDevice("Select Device", "00:11:22:33:44:01", -45).name);
+//        deviceNames.add(new BleTestDevice("EthansPC", "00:11:22:33:44:01", -45).name);
+//        deviceNames.add(new BleTestDevice("Arduino UNO WiFi", "00:11:22:33:44:02", -70).name);
+//        deviceNames.add(new BleTestDevice("Ethan's iPhone (2)", "00:11:22:33:44:03", -60).name);
+    }
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.fragment_ble_connect, container, false);
+
+        deviceSpinner = view.findViewById(R.id.spinner_devices);
+        refreshButton = view.findViewById(R.id.button_refresh);
+        disconnectButton = view.findViewById(R.id.button_disconnect);
+        connectionStatusText = view.findViewById(R.id.label_connection_status);
+
+        // Set up Bluetooth
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (bluetoothAdapter == null) {
+            Toast.makeText(getContext(), "BLE not supported on this device.", Toast.LENGTH_LONG).show();
+        } else {
+            bleScanner = bluetoothAdapter.getBluetoothLeScanner();
         }
+
+        // Set up Spinner
+        spinnerAdapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                deviceNames);
+
+        deviceSpinner.setAdapter(spinnerAdapter);
+
+        // Refresh button → Start scanning
+        refreshButton.setOnClickListener(v -> startBleScan());
+
+        return view;
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_ble_connect, container, false);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        disconnectButton.setOnClickListener(v -> {
+            deviceSpinner.setSelection(0);
+            Toast.makeText(getContext(), "Device Disconnected", Toast.LENGTH_SHORT).show();
+        });
+
+        deviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isSpinnerInitialized) {
+                    // First call, just set flag and ignore
+                    isSpinnerInitialized = true;
+                    return;
+                }
+                String selectedItem = (String) parent.getItemAtPosition(position);
+
+                // Run functions based on item
+                switch (selectedItem) {
+                    case "Arduino UNO WiFi":
+                        connectionStatusSuccess();
+                        break;
+                    case "Ethan's iPhone (2)":
+                    case "EthansPC":
+                        connectionStatusFailed();
+                        break;
+                    default:
+                        connectionStatusText.setText("Disconnected");
+                        handleLostConnection();
+                        break;
+                }
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Optional: handle no selection
+            }
+        });
+
     }
+
+    private void connectionStatusSuccess() {
+        if (!isConnected) {
+            connectionStatusText.setText("Connecting...");
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // Do something after 5s = 5000ms
+                    connectionStatusText.setText("Connected!");
+                    isConnected = true;
+                    Toast.makeText(getContext(), "Connected!", Toast.LENGTH_SHORT).show();
+                }
+            }, 5000);
+        } else {
+            connectionStatusText.setText("Connected!");
+        }
+    }
+
+    private void connectionStatusFailed() {
+        connectionStatusText.setText("Connecting...");
+        if (isConnected) {
+            handleLostConnection();
+        }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Do something after 5s = 5000ms
+                connectionStatusText.setText("Connection Failed");
+            }
+        }, 5000);
+    }
+
+    private void startBleScan() {
+
+        spinnerAdapter.notifyDataSetChanged();
+    }
+
+    private void handleLostConnection() {
+        isConnected = false;
+        Toast.makeText(getContext(), "Lost connection to collar. Location shown is from last connection.", Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean getConnectionStatus() {
+        return isConnected;
+    }
+
 }
