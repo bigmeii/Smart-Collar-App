@@ -1,9 +1,7 @@
 package com.example.elec290smartcollarapp1.ui.ble_setup;
 
-import android.Manifest;
 import android.os.Bundle;
 
-import androidx.annotation.RequiresPermission;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
@@ -11,13 +9,12 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanResult;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,41 +25,40 @@ import com.example.elec290smartcollarapp1.R;
 
 import java.util.ArrayList;
 import java.util.List;
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link BleConnectFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class BleConnectFragment extends Fragment {
+import android.os.Handler;
 
+public class BleConnectFragment extends Fragment {
     private Spinner deviceSpinner;
     private Button refreshButton;
     private Button disconnectButton;
-
+    private TextView connectionStatusText;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bleScanner;
-
     private ArrayAdapter<String> spinnerAdapter;
-    private final List<String> deviceNames = new ArrayList<>();
-    private final List<BluetoothDevice> devicesFound = new ArrayList<>();
+    private final List<String> deviceNames = new ArrayList<String>() {{
+        add(new BleTestDevice("Select Device", "00:11:22:33:44:01", -45).name);
+        add(new BleTestDevice("EthansPC", "00:11:22:33:44:01", -45).name);
+        add(new BleTestDevice("Arduino UNO WiFi", "00:11:22:33:44:02", -70).name);
+        add(new BleTestDevice("Ethan's iPhone (2)", "00:11:22:33:44:03", -60).name);
+    }};
 
-    private List<String> generateFakeDevices() {
-        deviceNames.add(new BleTestDevice("Helmet A", "00:11:22:33:44:01", -45).name);
-        deviceNames.add(new BleTestDevice("Helmet B", "00:11:22:33:44:02", -70).name);
-        deviceNames.add(new BleTestDevice("Helmet C", "00:11:22:33:44:03", -60).name);
-        return deviceNames;
-    }
+    final Handler handler = new Handler();
+    private boolean isSpinnerInitialized = false;
 
-
+    public static boolean isConnected = false;
 
     public BleConnectFragment() {
         super(R.layout.fragment_ble_connect);
     }
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-
+        super.onCreate(savedInstanceState);
+//        deviceNames.add(new BleTestDevice("Select Device", "00:11:22:33:44:01", -45).name);
+//        deviceNames.add(new BleTestDevice("EthansPC", "00:11:22:33:44:01", -45).name);
+//        deviceNames.add(new BleTestDevice("Arduino UNO WiFi", "00:11:22:33:44:02", -70).name);
+//        deviceNames.add(new BleTestDevice("Ethan's iPhone (2)", "00:11:22:33:44:03", -60).name);
     }
     @Nullable
     @Override
@@ -72,14 +68,10 @@ public class BleConnectFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_ble_connect, container, false);
 
-        deviceSpinner = view.findViewById(R.id.sort_by_spinner);
-        refreshButton = view.findViewById(R.id.refresh_button);
-        disconnectButton = view.findViewById(R.id.disconnect_button);
-
-        deviceNames.add(new BleTestDevice("Select Device", "00:11:22:33:44:01", -45).name);
-        deviceNames.add(new BleTestDevice("EthansPC", "00:11:22:33:44:01", -45).name);
-        deviceNames.add(new BleTestDevice("Arduino UNO WiFi", "00:11:22:33:44:02", -70).name);
-        deviceNames.add(new BleTestDevice("Ethan's iPhone (2)", "00:11:22:33:44:03", -60).name);
+        deviceSpinner = view.findViewById(R.id.spinner_devices);
+        refreshButton = view.findViewById(R.id.button_refresh);
+        disconnectButton = view.findViewById(R.id.button_disconnect);
+        connectionStatusText = view.findViewById(R.id.label_connection_status);
 
         // Set up Bluetooth
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -100,56 +92,94 @@ public class BleConnectFragment extends Fragment {
         // Refresh button → Start scanning
         refreshButton.setOnClickListener(v -> startBleScan());
 
-        // Disconnect button
-        disconnectButton.setOnClickListener(v ->
-                Toast.makeText(getContext(), "Disconnect pressed (implement later)", Toast.LENGTH_SHORT).show());
-
         return view;
     }
 
-    private void startBleScan() {
-//        if (bluetoothAdapter == null || bleScanner == null) {
-//            Toast.makeText(getContext(), "Bluetooth not available.", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        // Source - https://stackoverflow.com/a
-// Posted by pankajagarwal, modified by community. See post 'Timeline' for change history
-// Retrieved 2025-11-24, License - CC BY-SA 4.0
+        disconnectButton.setOnClickListener(v -> {
+            deviceSpinner.setSelection(0);
+            Toast.makeText(getContext(), "Device Disconnected", Toast.LENGTH_SHORT).show();
+        });
 
+        deviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isSpinnerInitialized) {
+                    // First call, just set flag and ignore
+                    isSpinnerInitialized = true;
+                    return;
+                }
+                String selectedItem = (String) parent.getItemAtPosition(position);
 
+                // Run functions based on item
+                switch (selectedItem) {
+                    case "Arduino UNO WiFi":
+                        connectionStatusSuccess();
+                        break;
+                    case "Ethan's iPhone (2)":
+                    case "EthansPC":
+                        connectionStatusFailed();
+                        break;
+                    default:
+                        connectionStatusText.setText("Disconnected");
+                        handleLostConnection();
+                        break;
+                }
 
-        // Clear old list
-//        devicesFound.clear();
-//        deviceNames.clear();
-        spinnerAdapter.notifyDataSetChanged();
+            }
 
-//        // Start scan
-//        bleScanner.startScan(scanCallback);
-//        Toast.makeText(getContext(), "Scanning for devices...", Toast.LENGTH_SHORT).show();
-//
-//        // Auto-stop scanning after 4 seconds
-//        deviceSpinner.postDelayed(() -> {
-//            bleScanner.stopScan(scanCallback);
-//            Toast.makeText(getContext(), "Scan complete.", Toast.LENGTH_SHORT).show();
-//        }, 4000);
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Optional: handle no selection
+            }
+        });
+
     }
-//    private final ScanCallback scanCallback = new ScanCallback() {
-//        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-//        @Override
-//        public void onScanResult(int callbackType, ScanResult result) {
-//
-//            BluetoothDevice device = result.getDevice();
-//            String name = device.getName();
-//
-//            if (name == null) name = "Unnamed Device";
-//
-//            // Avoid duplicates
-//            if (!deviceNames.contains(name)) {
-//                deviceNames.add(name);
-//                devicesFound.add(device);
-//                spinnerAdapter.notifyDataSetChanged();
-//            }
-//        }
-//    };
+
+    private void connectionStatusSuccess() {
+        if (!isConnected) {
+            connectionStatusText.setText("Connecting...");
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // Do something after 5s = 5000ms
+                    connectionStatusText.setText("Connected!");
+                    isConnected = true;
+                    Toast.makeText(getContext(), "Connected!", Toast.LENGTH_SHORT).show();
+                }
+            }, 5000);
+        } else {
+            connectionStatusText.setText("Connected!");
+        }
+    }
+
+    private void connectionStatusFailed() {
+        connectionStatusText.setText("Connecting...");
+        handleLostConnection();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Do something after 5s = 5000ms
+                connectionStatusText.setText("Connection Failed");
+            }
+        }, 5000);
+    }
+
+    private void startBleScan() {
+
+        spinnerAdapter.notifyDataSetChanged();
+    }
+
+    private void handleLostConnection() {
+        isConnected = false;
+        Toast.makeText(getContext(), "Lost connection to collar. Location shown is from last connection.", Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean getConnectionStatus() {
+        return isConnected;
+    }
+
 }

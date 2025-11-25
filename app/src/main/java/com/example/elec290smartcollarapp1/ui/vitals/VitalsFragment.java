@@ -12,7 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.elec290smartcollarapp1.R;
-import com.example.elec290smartcollarapp1.ui.vitals.VitalsViewModel;
+import com.example.elec290smartcollarapp1.ui.ble_setup.BleConnectFragment;
 
 public class VitalsFragment extends Fragment {
 
@@ -30,7 +30,7 @@ public class VitalsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // UI reference
-        heartRateText = view.findViewById(R.id.heart_rate_value);
+        heartRateText = view.findViewById(R.id.value_heart_rate);
 
         // Shared ViewModel used by BLE fragment
         viewModel = new ViewModelProvider(requireActivity()).get(VitalsViewModel.class);
@@ -39,9 +39,12 @@ public class VitalsFragment extends Fragment {
 
         // Update UI when HR data arrives
         viewModel.getHeartRate().observe(getViewLifecycleOwner(), hr -> {
-            if (hr != null) {
-                heartRateText.setText(hr + " bpm");
+            if (hr != null && BleConnectFragment.getConnectionStatus()) {
+                heartRateText.setText(String.valueOf(hr));
+            } else {
+                heartRateText.setText("--");
             }
         });
     }
+
 }

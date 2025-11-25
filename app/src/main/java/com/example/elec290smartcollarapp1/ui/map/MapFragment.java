@@ -1,11 +1,8 @@
 package com.example.elec290smartcollarapp1.ui.map;
 
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
@@ -20,22 +17,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private double latitude = 44.228333;
     private double longitude = -76.492333;
 
 
     public MapFragment() { }
-
-    // Factory method to pass coordinates
-    public static MapFragment newInstance(double lat, double lon) {
-        MapFragment fragment = new MapFragment();
-        Bundle args = new Bundle();
-        args.putDouble("lat", lat);
-        args.putDouble("lon", lon);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -66,9 +57,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        // Set up the pin at the given coordinates
+        Bitmap original  = BitmapFactory.decodeResource(getResources(), R.drawable.icon_marker);
+        Bitmap scaled = Bitmap.createScaledBitmap(original, 100, 100, false);
         LatLng location = new LatLng(latitude, longitude);
-        googleMap.addMarker(new MarkerOptions().position(location).title("Marker"));
+
+        googleMap.addMarker(new MarkerOptions()
+                .position(location)
+                .title("Dog Collar")
+                .icon(BitmapDescriptorFactory.fromBitmap(scaled)));
+
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15));
     }
 }

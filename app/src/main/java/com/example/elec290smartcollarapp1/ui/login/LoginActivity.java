@@ -26,7 +26,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);  // <-- your XML file name
+        setContentView(R.layout.activity_login);
 
         // Link XML to Java
         usernameField = findViewById(R.id.field_username);
