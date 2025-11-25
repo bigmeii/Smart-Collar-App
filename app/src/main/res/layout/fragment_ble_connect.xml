@@ -6,6 +6,11 @@
     tools:context=".ui.ble_setup.BleConnectFragment">
 
     <!-- TODO: Update blank fragment layout -->
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/images1">
+    </RelativeLayout>
 
     <Spinner
         android:id="@+id/sort_by_spinner"
