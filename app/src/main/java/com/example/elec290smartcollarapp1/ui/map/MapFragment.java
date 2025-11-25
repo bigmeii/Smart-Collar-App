@@ -21,8 +21,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
-    private double latitude = 0;
-    private double longitude = 0;
+    private double latitude = 44.228333;
+    private double longitude = -76.492333;
 
 
     public MapFragment() { }

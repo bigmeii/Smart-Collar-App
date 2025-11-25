@@ -18,7 +18,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/dashboard_title"
+            android:id="@+id/heart_rate_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Dashboard"
@@ -44,7 +44,7 @@
             android:background="@color/white"/>
 
         <TextView
-            android:id="@+id/dashboard_title"
+            android:id="@+id/heart_rate_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="468dp"

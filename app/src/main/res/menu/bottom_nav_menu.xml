@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/nav_bluetooth"
+        android:title="Bluetooth"
+        android:icon="@drawable/ic_bluetooth" />
+
+    <item
         android:id="@+id/nav_map"
         android:title="Map"
         android:icon="@drawable/ic_map" />
@@ -9,5 +14,7 @@
         android:id="@+id/nav_vitals"
         android:title="Vitals"
         android:icon="@drawable/ic_vitals" />
+
+
 
 </menu>
