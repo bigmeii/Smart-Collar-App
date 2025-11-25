@@ -158,7 +158,9 @@ public class BleConnectFragment extends Fragment {
 
     private void connectionStatusFailed() {
         connectionStatusText.setText("Connecting...");
-        handleLostConnection();
+        if (isConnected) {
+            handleLostConnection();
+        }
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
