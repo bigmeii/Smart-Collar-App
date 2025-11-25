@@ -6,9 +6,27 @@
     tools:context=".ui.ble_setup.BleConnectFragment">
 
     <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+
+    <Spinner
+        android:id="@+id/sort_by_spinner"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:prompt="@string/spinner_prompt"
+        android:spinnerMode="dropdown"/>
+
+    <Button
+        android:id="@+id/refresh_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="Refresh" />
+
+    <Button
+        android:id="@+id/disconnect_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:backgroundTint="@color/red"
+        android:text="Disconnect" />
 
 </FrameLayout>
